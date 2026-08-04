@@ -10,7 +10,8 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // Chạy Backend ở port 3001
-  await app.listen(3001);
+  const port = process.env.PORT || 3001;
+
+await app.listen(port);
 }
 bootstrap();
