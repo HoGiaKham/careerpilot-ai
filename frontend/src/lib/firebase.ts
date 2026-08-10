@@ -30,6 +30,11 @@ if (typeof window !== 'undefined') {
 }
 
 const googleProvider = new GoogleAuthProvider();
+
+// Facebook không trả email
 const facebookProvider = new FacebookAuthProvider();
+
+facebookProvider.addScope('email');
+facebookProvider.addScope('public_profile');
 
 export { app, auth, googleProvider, facebookProvider };

@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import Navbar from "../components/Navbar";
+import { ThemeProvider } from "../components/ThemeProvider";
+import { LanguageProvider } from "../context/LanguageProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,17 +29,21 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased light`}
+      suppressHydrationWarning // <-- Thêm dòng này để tránh cảnh báo lệch HTML SSR của Next.js khi đổi theme
     >
-      <body className="min-h-full flex flex-col bg-gray-50 text-gray-900">
-        {/* Navbar sẽ luôn nằm trên cùng ở tất cả các trang */}
-        <Navbar />
-        
-        <Toaster position="top-center" reverseOrder={false} />
-        
-        <div className="flex-1">
-          {children}
-        </div>
+      <body className="min-h-full flex flex-col bg-gray-50 text-gray-900 dark:bg-zinc-950 dark:text-zinc-100 transition-colors">
+        <LanguageProvider>
+          <ThemeProvider>
+            <Navbar />
+            
+            <Toaster position="top-center" reverseOrder={false} />
+            
+            <div className="flex-1">
+              {children}
+            </div>
+          </ThemeProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

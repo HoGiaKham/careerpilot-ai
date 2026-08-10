@@ -3,7 +3,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
-// 🔴 Import cú pháp mới của firebase-admin v12+
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 
@@ -13,7 +12,6 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService 
   ) {
-    // 🔴 BÍ QUYẾT LÀ ĐÂY: Khởi tạo Firebase bên trong Constructor 
     // Để đảm bảo NestJS đã load xong biến môi trường (.env)
     if (!getApps().length) {
       initializeApp({
@@ -25,12 +23,15 @@ export class AuthService {
 
   // ================= ĐĂNG KÝ =================
   async register(email: string, password: string) {
+    // Lưu ý: user tìm theo email có thể trả về user tạo từ Social chưa có password
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
     });
     
-    if (existingUser) {
+    if (existingUser && existingUser.password) {
       throw new BadRequestException('Email này đã được sử dụng!');
+    } else if (existingUser && !existingUser.password) {
+      throw new BadRequestException('Email này đã được đăng nhập qua Google/Facebook. Vui lòng đăng nhập bằng Social!');
     }
 
     const saltRounds = 10;
@@ -57,8 +58,8 @@ export class AuthService {
       where: { email },
     });
 
-    if (!user) {
-      throw new UnauthorizedException('Email hoặc mật khẩu không chính xác!');
+    if (!user || !user.password) {
+      throw new UnauthorizedException('Email hoặc mật khẩu không chính xác! (Hoặc tài khoản này dùng Social Login)');
     }
 
     const isPasswordMatching = await bcrypt.compare(pass, user.password);
@@ -81,39 +82,70 @@ export class AuthService {
     };
   }
 
-  // ================= ĐĂNG NHẬP SOCIAL (Google/Facebook) =================
-  async socialLogin(firebaseToken: string) {
+// ================= ĐĂNG NHẬP SOCIAL (Google/Facebook) =================
+  async socialLogin(firebaseToken: string, providedName?: string) {
     try {
-      // 1. Nhờ Firebase Admin giải mã thẻ xem có phải đồ thật do Google/Facebook cấp không
       const decodedToken = await getAuth().verifyIdToken(firebaseToken);
-      const email = decodedToken.email;
+      
+      const uid = decodedToken.uid; 
+      const email = decodedToken.email; 
+      const name = providedName || decodedToken.name || decodedToken.firebase?.sign_in_provider || null; // 👈 LẤY TÊN TỪ GOOGLE/FACEBOOK
 
-      if (!email) {
-        throw new UnauthorizedException('Không lấy được email từ tài khoản Social!');
-      }
-
-      // 2. Tìm trong Database xem user đã tồn tại chưa
+      // 2. TÌM THEO FIREBASE UID TRƯỚC
       let user = await this.prisma.user.findUnique({
-        where: { email },
+        where: { firebaseUid: uid },
       });
 
-      // 3. Nếu chưa có -> Tạo tài khoản mới tự động
+      // 3. Nếu chưa có theo UID, tìm theo email để link tài khoản
+      if (!user && email) {
+        user = await this.prisma.user.findUnique({
+          where: { email },
+        });
+
+        if (user) {
+          // Link tài khoản và tiện tay lưu luôn cái tên nếu DB đang trống
+          user = await this.prisma.user.update({
+            where: { id: user.id },
+            data: { 
+              firebaseUid: uid,
+              name: user.name || name // Chỉ update nếu trước đó chưa có tên
+            },
+          });
+        }
+      }
+
+      // 4. Nếu hoàn toàn là người mới -> Tạo tài khoản mới
       if (!user) {
         user = await this.prisma.user.create({
           data: {
-            email: email,
-            password: '', // Không cần password vì login bằng Social
+            firebaseUid: uid,
+            email: email || null,
+            password: null,
+            name: name, // 👈 LƯU TÊN VÀO DATABASE
           },
+        });
+      } else if (!user.name && name) {
+        // Trường hợp user cũ (đã có từ trước) nhưng chưa có tên, ta cập nhật thêm
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: { name },
         });
       }
 
-      // 4. Cấp Thẻ nội bộ (JWT) cho user
-      const payload = { sub: user.id, email: user.email };
+      // 5. Cấp Thẻ nội bộ (JWT) cho user
+      // Ưu tiên hiển thị tên thật -> Nếu không có thì lấy phần đầu của email -> Nếu không có nữa mới lấy UID
+      const displayIdentifier = user.name || (user.email ? user.email.split('@')[0] : user.firebaseUid || user.id);
+      
+      const payload = { sub: user.id, email: user.email, name: displayIdentifier };
+      
       const accessToken = await this.jwtService.signAsync(payload, {
         secret: process.env.JWT_SECRET,
       });
 
-      return { accessToken };
+      return { 
+        accessToken,
+        user: { id: user.id, email: user.email, name: displayIdentifier }
+      };
     } catch (error) {
       console.error('Lỗi khi xác thực thẻ Firebase:', error);
       throw new UnauthorizedException('Thẻ Firebase không hợp lệ hoặc đã hết hạn');

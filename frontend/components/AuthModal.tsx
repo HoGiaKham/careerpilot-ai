@@ -1,16 +1,19 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import { signInWithPopup, AuthProvider } from 'firebase/auth';
 import { auth, googleProvider, facebookProvider } from '../src/lib/firebase';
 import toast from 'react-hot-toast';
+import { useLanguage } from '@/context/LanguageProvider';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  closeOnOutsideClick?: boolean;
 }
 
-export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
+export default function AuthModal({ isOpen, onClose, onSuccess, closeOnOutsideClick = false }: AuthModalProps) {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,6 +22,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
   const [isRendered, setIsRendered] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (isOpen) {
@@ -72,47 +76,43 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           setPassword('');
           onSuccess(); 
         } else {
-          toast.success('Đăng ký thành công! Vui lòng đăng nhập để tiếp tục.');
+          toast.success(t.auth.loginSuccess);
           setAuthMode('login');
         }
       } else {
-        setAuthError(data.message || 'Có lỗi xảy ra, vui lòng thử lại.');
+        setAuthError(data.message || t.auth.errorGeneric);
       }
     } catch (error) {
-      setAuthError('Không thể kết nối đến máy chủ Backend!');
+      setAuthError(t.auth.errorServer);
     } finally {
       setAuthLoading(false);
     }
   };
 
-  // ================= CẬP NHẬT CHỖ NÀY =================
   const handleSocialLogin = async (provider: AuthProvider, providerName: string) => {
     setAuthError('');
     setAuthLoading(true);
     try {
-      // 1. Lấy thông tin từ popup của Firebase
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       
-      // 2. Lấy Thẻ của Firebase
       const firebaseToken = await user.getIdToken();
+      const displayName = user.displayName || user.email?.split('@')[0] || ''; 
       
-      // 3. MANG THẺ FIREBASE ĐI ĐỔI LẤY THẺ JWT CỦA BACKEND
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const response = await fetch(`${apiUrl}/auth/social`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: firebaseToken }),
+        body: JSON.stringify({ token: firebaseToken, name: displayName }),
       });
 
       const data = await response.json();
 
       if (response.ok && data.accessToken) {
-        // 4. Lưu thẻ JWT NỘI BỘ xịn sò vào túi
         localStorage.setItem('token', data.accessToken);
-        onSuccess(); // Đóng Modal và báo thành công
+        onSuccess();
       } else {
-        setAuthError(data.message || `Đăng nhập bằng ${providerName} thất bại từ Server.`);
+        setAuthError(data.message || t.auth.errorSocial.replace('{provider}', providerName));
       }
       
     } catch (error: any) {
@@ -128,7 +128,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
       className={`fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 transition-opacity duration-300 ease-out ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
-      onClick={onClose} 
+      onClick={closeOnOutsideClick ? onClose : undefined} 
     >
       <div 
         className={`bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden relative transition-all duration-300 ease-out transform ${
@@ -148,18 +148,18 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
         <div className="p-8 sm:p-10">
           <div className="mb-8 text-center">
             <h3 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              {authMode === 'login' ? 'Đăng nhập' : 'Đăng ký'}
+              {authMode === 'login' ? t.auth.loginTitle : t.auth.registerTitle}
             </h3>
             <p className="text-gray-500 text-sm sm:text-base mt-2">
               {authMode === 'login' 
-                ? 'Đăng nhập để sử dụng nhiều dịch vụ hơn.' 
-                : 'Tạo tài khoản mới để sử dụng nhiều dịch vụ.'}
+                ? t.auth.loginSubtitle 
+                : t.auth.registerSubtitle}
             </p>
           </div>
 
           <form onSubmit={handleAuthSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5 cursor-pointer">Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5 cursor-pointer">{t.auth.email}</label>
               <input 
                 type="email" 
                 required
@@ -171,7 +171,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5 cursor-pointer">Mật khẩu</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5 cursor-pointer">{t.auth.password}</label>
               <input 
                 type="password" 
                 required
@@ -199,14 +199,14 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
               ) : (
-                authMode === 'login' ? 'Đăng nhập' : 'Đăng ký'
+                authMode === 'login' ? t.auth.submitLogin : t.auth.submitRegister
               )}
             </button>
           </form>
 
           <div className="mt-8 flex items-center">
             <div className="flex-grow border-t border-gray-200"></div>
-            <span className="mx-4 text-xs sm:text-sm text-gray-400 font-medium">Hoặc tiếp tục với</span>
+            <span className="mx-4 text-xs sm:text-sm text-gray-400 font-medium">{t.auth.socialDivider}</span>
             <div className="flex-grow border-t border-gray-200"></div>
           </div>
 
@@ -217,7 +217,32 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
               disabled={authLoading}
               className="flex items-center justify-center w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
             >
-              Google
+              <span className="flex items-center justify-center gap-2">
+                <svg
+                  className="w-5 h-5"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill="#4285F4"
+                    d="M21.35 12.23c0-.79-.07-1.55-.22-2.27H12v4.3h5.23a4.47 4.47 0 0 1-1.94 2.93v2.44h3.14c1.84-1.69 2.92-4.18 2.92-7.4Z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 21.7c2.63 0 4.84-.87 6.45-2.36l-3.14-2.44c-.87.58-1.98.92-3.31.92-2.54 0-4.7-1.72-5.47-4.03H3.29v2.52A9.74 9.74 0 0 0 12 21.7Z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M6.53 13.79A5.85 5.85 0 0 1 6.23 12c0-.62.11-1.22.3-1.79V7.69H3.29A9.72 9.72 0 0 0 2.25 12c0 1.57.38 3.05 1.04 4.31l3.24-2.52Z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 6.18c1.43 0 2.71.49 3.72 1.46l2.79-2.79C16.83 3.28 14.63 2.3 12 2.3a9.74 9.74 0 0 0-8.71 5.39l3.24 2.52C7.3 7.9 9.46 6.18 12 6.18Z"
+                  />
+                </svg>
+
+                <span>Google</span>
+              </span>
             </button>
             <button
               type="button"
@@ -225,14 +250,28 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
               disabled={authLoading}
               className="flex items-center justify-center w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
             >
-              Facebook
+              <span className="flex items-center justify-center gap-2">
+                <svg
+                  className="w-5 h-5"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="12" fill="#1877F2" />
+                  <path
+                    fill="white"
+                    d="M13.5 21v-8h2.7l.4-3h-3.1V8.1c0-.87.24-1.46 1.5-1.46h1.7V4c-.3-.04-1.33-.13-2.53-.13-2.5 0-4.22 1.53-4.22 4.34V10H7.1v3h2.85v8h3.55Z"
+                  />
+                </svg>
+
+                <span>Facebook</span>
+              </span>
             </button>
           </div>
 
           <div className="mt-8 pt-6 border-t border-gray-100 text-center text-sm text-gray-600">
             {authMode === 'login' ? (
               <p>
-                Chưa có tài khoản?{' '}
+                {t.auth.noAccount}{' '}
                 <button 
                   onClick={() => {
                     setAuthMode('register');
@@ -240,12 +279,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                   }}
                   className="font-semibold text-black hover:underline cursor-pointer"
                 >
-                  Đăng ký ngay
+                  {t.auth.registerNow}
                 </button>
               </p>
             ) : (
               <p>
-                Đã có tài khoản?{' '}
+                {t.auth.haveAccount}{' '}
                 <button 
                   onClick={() => {
                     setAuthMode('login');
@@ -253,7 +292,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                   }}
                   className="font-semibold text-black hover:underline cursor-pointer"
                 >
-                  Đăng nhập
+                  {t.auth.loginNow}
                 </button>
               </p>
             )}

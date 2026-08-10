@@ -13,11 +13,13 @@ datasource db {
 // ----------------------------------------------------
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String   // Sẽ lưu password đã được băm (hash)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid())
+  email       String?  @unique // Thêm dấu ? để cho phép null (dành cho Facebook ko có email)
+  password    String?          // Thêm dấu ? vì Social login không cần pass
+  name        String?
+  firebaseUid String?  @unique // Cột mới để định danh user từ Firebase
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Quan hệ: 1 User có thể có nhiều Resume, JD và Kết quả phân tích
   resumes         Resume[]

@@ -7,6 +7,7 @@ import {
   FileText, UploadCloud, RefreshCw, ArrowRight 
 } from 'lucide-react';
 import { demoCases } from '@/data/demoCases';
+import { useLanguage } from '@/context/LanguageProvider';
 
 export default function HeroDemo() {
   const [currentCase, setCurrentCase] = useState(demoCases[0]);
@@ -14,6 +15,7 @@ export default function HeroDemo() {
   const [isDemoAnalyzing, setIsDemoAnalyzing] = useState(false);
   const [analyzingStep, setAnalyzingStep] = useState('');
   const [displayedSuggestion, setDisplayedSuggestion] = useState('');
+  const { t } = useLanguage();
 
   const scoreIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -100,18 +102,18 @@ export default function HeroDemo() {
       <div className="max-w-4xl mx-auto relative z-10">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-md border border-slate-200 shadow-sm text-xs sm:text-sm font-semibold text-slate-700 mb-8 hover:shadow-md transition-all cursor-default">
           <Sparkles className="w-4 h-4 text-blue-600 animate-spin-slow" />
-          AI-powered Resume Analysis
+          {t.landing.badge}
         </div>
         
         <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight mb-6 leading-[1.15]">
-          Biến CV của bạn thành <br className="hidden md:block" />
+          {t.landing.heroTitleLine1} <br className="hidden md:block" />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
-            lợi thế cạnh tranh.
+            {t.landing.heroTitleLine2}
           </span>
         </h1>
         
         <p className="text-base sm:text-lg md:text-xl text-slate-500 mb-10 max-w-2xl mx-auto leading-relaxed font-normal">
-          Phân tích CV bằng AI chuyên sâu. So khớp chính xác với Job Description, phát hiện kỹ năng còn thiếu và nhận đề xuất tối ưu ngay lập tức để tăng cơ hội được gọi phỏng vấn.
+          {t.landing.heroSubtitle}
         </p>
         
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-16 w-full sm:w-auto">
@@ -119,14 +121,14 @@ export default function HeroDemo() {
             href="/dashboard"
             className="w-full sm:w-auto bg-slate-900 text-white font-semibold px-8 py-4 rounded-full text-base sm:text-lg shadow-xl hover:bg-slate-800 hover:shadow-2xl transition-all hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2 group"
           >
-            Bắt đầu phân tích ngay
+            {t.landing.ctaPrimary}
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Link>
           <Link 
             href="#how-it-works"
             className="w-full sm:w-auto bg-white text-slate-700 font-semibold px-8 py-4 rounded-full text-base sm:text-lg border border-slate-200 shadow-sm hover:bg-slate-50 transition-all text-center"
           >
-            Tìm hiểu cách hoạt động
+            {t.landing.ctaSecondary}
           </Link>
         </div>
       </div>
@@ -148,7 +150,7 @@ export default function HeroDemo() {
               className="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isDemoAnalyzing ? 'animate-spin' : ''}`} />
-              {isDemoAnalyzing ? 'Running Demo...' : 'Run Demo Analysis'}
+              {isDemoAnalyzing ? t.landing.demoRunning : t.landing.demoButton}
             </button>
           </div>
 
@@ -160,19 +162,19 @@ export default function HeroDemo() {
                   <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center">
                     <FileText className="w-3.5 h-3.5 text-blue-600" />
                   </div>
-                  <span className="font-bold text-slate-700 text-xs sm:text-sm">Input Document</span>
+                  <span className="font-bold text-slate-700 text-xs sm:text-sm">{t.landing.inputDocument}</span>
                 </div>
-                <span className="text-xs text-slate-400 font-mono transition-opacity">PDF Ready</span>
+                <span className="text-xs text-slate-400 font-mono transition-opacity">{t.landing.pdfReady}</span>
               </div>
               
               <div className={`h-36 sm:h-44 w-full border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-2 p-4 text-center transition-colors duration-500 ${isDemoAnalyzing ? 'border-slate-300 bg-slate-100 text-slate-500' : 'border-blue-300 bg-blue-50/40 text-blue-600'}`}>
                 <UploadCloud className={`w-8 h-8 opacity-80 ${isDemoAnalyzing ? '' : 'animate-bounce'}`} />
                 <span className="font-bold text-xs sm:text-sm text-slate-800">{currentCase.fileName}</span>
-                <span className="text-[11px] text-slate-400">Target Role: {currentCase.targetRole}</span>
+                <span className="text-[11px] text-slate-400">{t.landing.targetRole}: {currentCase.targetRole}</span>
               </div>
               
               <div className="p-3 bg-white border border-slate-200 rounded-xl shadow-sm text-xs text-slate-500 space-y-1.5 transition-all">
-                <div className="font-semibold text-slate-700">Job Description Match Context:</div>
+                <div className="font-semibold text-slate-700">{t.landing.jdContext}:</div>
                 <p className="line-clamp-2 italic text-[11px] text-slate-400">
                   {currentCase.jdContext}
                 </p>
@@ -195,7 +197,7 @@ export default function HeroDemo() {
                   <div className="border-b border-slate-100 pb-4">
                     <div className="flex justify-between items-end mb-2">
                       <div>
-                        <h3 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Overall Match</h3>
+                        <h3 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">{t.landing.overallMatch}</h3>
                         <div className={`text-4xl sm:text-5xl font-black ${themeConfig.text} transition-colors duration-500`}>
                           {demoScore}<span className="text-2xl opacity-50">%</span>
                         </div>
@@ -214,7 +216,7 @@ export default function HeroDemo() {
                   
                   <div>
                     <h4 className="text-xs font-bold text-slate-800 mb-2 flex items-center gap-1.5">
-                      <ThumbsUp className="w-3.5 h-3.5 text-emerald-500"/> Key Strengths
+                      <ThumbsUp className="w-3.5 h-3.5 text-emerald-500"/> {t.landing.strengths}
                     </h4>
                     <div className="flex flex-wrap gap-1.5">
                       {currentCase.strengths.map((str, idx) => (
@@ -227,7 +229,7 @@ export default function HeroDemo() {
                   
                   <div>
                     <h4 className="text-xs font-bold text-slate-800 mb-2 flex items-center gap-1.5">
-                      <Target className="w-3.5 h-3.5 text-red-500"/> Missing Skills
+                      <Target className="w-3.5 h-3.5 text-red-500"/> {t.landing.missingSkills}
                     </h4>
                     <div className="flex gap-1.5 flex-wrap">
                       {currentCase.missing.map((miss, idx) => (
@@ -240,7 +242,7 @@ export default function HeroDemo() {
                   
                   <div>
                     <h4 className="text-xs font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
-                      <Lightbulb className="w-3.5 h-3.5 text-amber-500"/> Actionable Suggestion
+                      <Lightbulb className="w-3.5 h-3.5 text-amber-500"/> {t.landing.suggestion}
                     </h4>
                     <div className="p-2.5 bg-amber-50/60 border border-amber-200/60 rounded-lg text-xs text-amber-900 font-medium min-h-[48px] font-mono leading-relaxed transition-all">
                       {displayedSuggestion}

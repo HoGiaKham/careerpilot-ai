@@ -25,10 +25,10 @@ export class AuthController {
 
   // ================= THÊM API ĐỔI THẺ SOCIAL =================
   @Post('social')
-  async socialLogin(@Body() body: { token: string }) {
+  async socialLogin(@Body() body: { token: string; name?: string }) {
     if (!body.token) {
       throw new BadRequestException('Vui lòng cung cấp token từ Firebase!');
     }
-    return this.authService.socialLogin(body.token);
+    return this.authService.socialLogin(body.token, body.name);
   }
 }
