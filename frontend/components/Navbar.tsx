@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import AuthModal from './AuthModal';
 import { toast } from 'react-hot-toast';
 import { ChevronDown, Globe2 } from 'lucide-react';
@@ -9,6 +10,7 @@ import { useLanguage } from '@/context/LanguageProvider';
 
 export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const router = useRouter();
   const [userName, setUserName] = useState<string>('');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -68,12 +70,13 @@ export default function Navbar() {
     checkLoginState();
     setIsDropdownOpen(false);
     toast.success(t.navbar.logoutSuccess);
+    router.push('/dashboard');
   };
 
   return (
     <>
       <nav className="bg-white dark:bg-zinc-900 border-b border-gray-100 dark:border-zinc-800 shadow-sm px-6 py-4 flex justify-between items-center sticky top-0 z-40 transition-colors">
-        <Link href="/">
+        <Link href="/dashboard">
           <h1 className="text-xl font-extrabold text-blue-600 dark:text-blue-400 tracking-tight cursor-pointer hover:opacity-80 transition-opacity">
             CareerPilot AI
           </h1>

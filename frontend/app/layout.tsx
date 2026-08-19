@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import Navbar from "../components/Navbar";
+import DevelopmentNotice from "../components/DevelopmentNotice";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { LanguageProvider } from "../context/LanguageProvider";
 
@@ -30,15 +31,14 @@ export default function RootLayout({
     <html
       lang="vi"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased light`}
-      suppressHydrationWarning // <-- Thêm dòng này để tránh cảnh báo lệch HTML SSR của Next.js khi đổi theme
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-gray-50 text-gray-900 dark:bg-zinc-950 dark:text-zinc-100 transition-colors">
         <LanguageProvider>
           <ThemeProvider>
             <Navbar />
-            
+            <DevelopmentNotice />
             <Toaster position="top-center" reverseOrder={false} />
-            
             <div className="flex-1">
               {children}
             </div>

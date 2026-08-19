@@ -1,5 +1,3 @@
-// Đây là file định nghĩa cấu trúc Database của bạn
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,50 +6,44 @@ datasource db {
   provider = "postgresql"
 }
 
-// ----------------------------------------------------
-// ĐỊNH NGHĨA CÁC BẢNG (MODELS)
-// ----------------------------------------------------
-
 model User {
   id          String   @id @default(uuid())
-  email       String?  @unique // Thêm dấu ? để cho phép null (dành cho Facebook ko có email)
-  password    String?          // Thêm dấu ? vì Social login không cần pass
+  email       String?  @unique
+  password    String?
   name        String?
-  firebaseUid String?  @unique // Cột mới để định danh user từ Firebase
+  firebaseUid String?  @unique
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Quan hệ: 1 User có thể có nhiều Resume, JD và Kết quả phân tích
   resumes         Resume[]
   jobDescriptions JobDescription[]
   analysisResults AnalysisResult[]
 }
 
 model Resume {
-  id          String   @id @default(uuid())
-  userId      String?
-  fileUrl     String   // Đường dẫn file PDF lưu trên Cloudinary
-  parsedText  String   @db.Text // Nội dung text bóc tách từ PDF
-  createdAt   DateTime @default(now())
+  id           String   @id @default(uuid())
+  userId       String?
+  originalName String?
+  sourceType   String   @default("UPLOAD")
+  isDeleted     Boolean  @default(false) // soft delete để ko hiển thị ở FE -> Quản lý CVS
+  fileUrl      String?
+  parsedText   String?  @db.Text
+  cvData       Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  // Liên kết với bảng User
-  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Quan hệ: 1 Resume có thể được đem đi phân tích nhiều lần
+  user            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   analysisResults AnalysisResult[]
 }
 
 model JobDescription {
-  id          String   @id @default(uuid())
-  userId      String?
-  title       String?  // Tên công việc (có thể trống)
-  content     String   @db.Text // Nội dung JD copy/paste hoặc text bóc tách
-  createdAt   DateTime @default(now())
+  id        String   @id @default(uuid())
+  userId    String?
+  title     String?
+  content   String   @db.Text
+  createdAt DateTime @default(now())
 
-  // Liên kết với bảng User
-  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Quan hệ: 1 JD có thể dùng để map với nhiều Resume
+  user            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   analysisResults AnalysisResult[]
 }
 
@@ -60,18 +52,14 @@ model AnalysisResult {
   userId          String?
   resumeId        String
   jdId            String
-  
-  // Kết quả AI trả về lưu dưới dạng JSON để dễ dàng hiển thị và mở rộng sau này
-  matchScore      Int      // Điểm số khớp (0 - 100)
-  strengths       String[] // Mảng các điểm mạnh
-  weaknesses      String[] // Mảng các điểm yếu
-  missingSkills   String[] // Mảng các kỹ năng còn thiếu
-  recommendations String[] // Lời khuyên từ AI
-
+  matchScore      Int
+  strengths       String[]
+  weaknesses      String[]
+  missingSkills   String[]
+  recommendations String[]
   createdAt       DateTime @default(now())
 
-  // Các liên kết
-  user      User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  resume    Resume         @relation(fields: [resumeId], references: [id], onDelete: Cascade)
-  jd        JobDescription @relation(fields: [jdId], references: [id], onDelete: Cascade)
+  user   User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume Resume         @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  jd     JobDescription @relation(fields: [jdId], references: [id], onDelete: Cascade)
 }
