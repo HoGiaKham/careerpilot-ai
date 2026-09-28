@@ -57,8 +57,7 @@ export default function HistoryPage() {
       } else {
         toast.error(data.message || t.history.loadError);
       }
-    } catch (error) {
-      console.error('Lỗi khi gọi API Lịch sử:', error);
+    } catch {
       toast.error(t.history.connectionError);
     } finally {
       setLoading(false);

@@ -179,7 +179,6 @@ export default function DashboardPage() {
         throw new Error(data.message || 'Unknown error');
       }
     } catch (error: any) {
-      console.error('API Error:', error);
       toast.error(`${t.dashboard.serverErrorPrefix} ${error.message || t.dashboard.errorServer}`);
       setIsAnalyzing(false);
       setAnalysisError(true);

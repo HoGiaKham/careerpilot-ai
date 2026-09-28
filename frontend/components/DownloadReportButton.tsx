@@ -129,10 +129,7 @@ export default function DownloadReportButton({
       toast.success('Đã tải báo cáo PDF thành công!', {
         id: toastId,
       });
-    } catch (error) {
-      console.error('Lỗi xuất PDF:', error);
-
-      // Đảm bảo report được ẩn lại nếu xảy ra lỗi
+    } catch {
       reportElement.style.display = 'none';
 
       toast.error('Lỗi khi tạo PDF, vui lòng thử lại.', {

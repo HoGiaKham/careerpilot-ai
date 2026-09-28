@@ -1,6 +1,6 @@
 interface EmptyWorkspaceProps {
   onCreateClick: () => void;
-  isUploading?: boolean; // BỔ SUNG PROP NÀY
+  isUploading?: boolean;
 }
 
 export default function EmptyWorkspace({ onCreateClick, isUploading }: EmptyWorkspaceProps) {

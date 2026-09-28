@@ -116,7 +116,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess, closeOnOutsideCl
       }
       
     } catch (error: any) {
-      console.error(error);
       setAuthError(`Lỗi kết nối hoặc hủy đăng nhập: ${error.message}`);
     } finally {
       setAuthLoading(false);

@@ -12,7 +12,7 @@ export default function MyCvsPage() {
   const [cvList, setCvList] = useState<ResumeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const { t, lang } = useLanguage();
+  const { lang } = useLanguage();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -57,31 +57,27 @@ export default function MyCvsPage() {
     }
   };
 
-  // Sự kiện khi bấm nút kích hoạt input ẩn
   const handleTriggerUpload = () => {
     fileInputRef.current?.click();
   };
 
   const handleCreateNew = () => {
-    router.push('/create-cv'); 
+    router.push('/create-cv');
   };
 
-  // Xử lý thực tế khi người dùng chọn file
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate nhanh: Chỉ cho phép file PDF
     if (file.type !== 'application/pdf') {
       toast.error('Vui lòng chỉ tải lên định dạng file PDF!');
-      event.target.value = ''; // Reset input
+      event.target.value = '';
       return;
     }
 
-    // Validate size: Giới hạn 5MB
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Dung lượng file vượt quá giới hạn 5MB!');
-      event.target.value = ''; // Reset input
+      event.target.value = '';
       return;
     }
 
@@ -92,13 +88,11 @@ export default function MyCvsPage() {
       return;
     }
 
-    // Gói file vào FormData để gửi qua API
     const formData = new FormData();
     formData.append('file', file);
 
     setUploading(true);
 
-    // Dùng Promise kết hợp với toast.promise để tạo hiệu ứng loading
     const uploadTask = new Promise(async (resolve, reject) => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -113,7 +107,7 @@ export default function MyCvsPage() {
         const data = await response.json();
 
         if (response.ok && data.success) {
-          await fetchCvs(); // Load lại danh sách ngay lập tức
+          await fetchCvs();
           resolve(data.message);
         } else {
           reject(new Error(data.message || 'Lỗi từ máy chủ'));
@@ -123,7 +117,7 @@ export default function MyCvsPage() {
         reject(new Error('Mạng không ổn định hoặc máy chủ không phản hồi'));
       } finally {
         setUploading(false);
-        event.target.value = ''; // Reset để chọn lại file cũ không bị lỗi
+        event.target.value = '';
       }
     });
 
@@ -146,7 +140,6 @@ export default function MyCvsPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 pb-20 font-sans text-slate-900 dark:text-zinc-100">
       <main className="max-w-7xl mx-auto p-6 pt-10">
         
-        {/* Input file ẩn đi */}
         <input 
           type="file" 
           ref={fileInputRef}
@@ -155,7 +148,6 @@ export default function MyCvsPage() {
           onChange={handleFileChange}
         />
 
-        {/* Truyền uploading vào để disable các nút trong lúc đợi API */}
         <WorkspaceHeader 
           onUploadClick={handleTriggerUpload} 
           onCreateClick={handleCreateNew}

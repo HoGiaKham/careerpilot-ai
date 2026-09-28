@@ -24,8 +24,8 @@ const auth = getAuth(app);
 
 // 3. Trị dứt điểm lỗi "Database is closing/hidden" bằng cách ép dùng LocalStorage (Chỉ chạy trên Client)
 if (typeof window !== 'undefined') {
-  setPersistence(auth, browserLocalPersistence).catch((error) => {
-    console.error("Lỗi Firebase Persistence:", error);
+  setPersistence(auth, browserLocalPersistence).catch(() => {
+    // Ignore persistence initialization errors.
   });
 }
 

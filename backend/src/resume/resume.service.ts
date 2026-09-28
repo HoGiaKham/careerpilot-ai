@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import pdf from 'pdf-parse';
 
+// Các loại CV hiển thị trong /my-cvs và được tính vào thống kê
+const WORKSPACE_SOURCE_TYPES = ['WORKSPACE', 'AI_GENERATED', 'MANUAL', 'AI_TAILORED'];
+
 @Injectable()
 export class ResumeService {
   constructor(private readonly prisma: PrismaService) {}
@@ -10,8 +13,7 @@ export class ResumeService {
     try {
       const data = await pdf(fileBuffer);
       return data.text.replace(/\n\s*\n/g, '\n').trim();
-    } catch (error) {
-      console.error(error);
+    } catch {
       throw new Error('Không thể đọc được nội dung từ file PDF.');
     }
   }
@@ -24,7 +26,7 @@ export class ResumeService {
           fileUrl: cvUrl,
           parsedText: parsedText,
           originalName: originalName || 'CV_Upload.pdf',
-          sourceType: 'ANALYSIS' 
+          sourceType: 'ANALYSIS'
         }
       });
 
@@ -40,9 +42,7 @@ export class ResumeService {
           recommendations: aiAnalysis.recommendations,
         }
       });
-      console.log(`[DB] Đã lưu lịch sử cho User: ${userId}`);
-    } catch (error) {
-      console.error('[DB Lỗi] Không thể lưu kết quả:', error);
+    } catch {
     }
   }
 
@@ -58,8 +58,7 @@ export class ResumeService {
         }
       });
       return resume;
-    } catch (error) {
-      console.error('[DB Lỗi] Lỗi khi lưu CV mới:', error);
+    } catch {
       throw new Error('Không thể lưu CV vào cơ sở dữ liệu');
     }
   }
@@ -78,15 +77,14 @@ export class ResumeService {
   async getCvsByUser(userId: string) {
     try {
       return await this.prisma.resume.findMany({
-        where: { 
+        where: {
           userId: userId,
-          sourceType: 'WORKSPACE',
+          sourceType: { in: WORKSPACE_SOURCE_TYPES },
           isDeleted: false
         },
-        orderBy: { createdAt: 'desc' }, 
+        orderBy: { createdAt: 'desc' },
       });
-    } catch (error) {
-      console.error('[DB Lỗi] Lỗi khi lấy danh sách CV:', error);
+    } catch {
       throw new Error('Không thể truy xuất dữ liệu CV');
     }
   }
@@ -97,7 +95,7 @@ export class ResumeService {
     });
 
     const cvCount = await this.prisma.resume.count({
-      where: { userId: userId, isDeleted: false, sourceType: 'WORKSPACE' },
+      where: { userId: userId, isDeleted: false, sourceType: { in: WORKSPACE_SOURCE_TYPES } },
     });
 
     const estimatedStorageMb = (cvCount * 0.8).toFixed(1) + ' MB';
@@ -169,5 +167,50 @@ export class ResumeService {
 
     return null; // Vẫn còn xài, không xóa Cloudinary
   }
-  
+
+  // Làm phẳng cvData (JSON) thành text thuần để lưu vào parsedText,
+  // giúp chức năng "Phân tích CV" dùng được với CV tạo từ editor (không có file PDF)
+  private flattenToText(data: any): string {
+    if (data == null) return '';
+    if (typeof data === 'string') return data;
+    if (typeof data === 'number') return String(data);
+    if (Array.isArray(data)) {
+      return data.map((d) => this.flattenToText(d)).filter(Boolean).join('\n');
+    }
+    if (typeof data === 'object') {
+      const SKIP = ['id', 'isCurrent', 'meta'];
+      return Object.entries(data)
+        .filter(([k]) => !SKIP.includes(k))
+        .map(([, v]) => this.flattenToText(v))
+        .filter(Boolean)
+        .join('\n');
+    }
+    return '';
+  }
+
+  // tạo resume
+  async saveWorkspaceCvWithData(userId: string, cvData: any, originalName: string, sourceType: string = 'AI_GENERATED') {
+    try {
+      return await this.prisma.resume.create({
+        data: { userId, originalName, sourceType, cvData, parsedText: this.flattenToText(cvData) },
+      });
+    } catch {
+      throw new Error('Không thể lưu CV vào cơ sở dữ liệu');
+    }
+  }
+
+  async getWorkspaceCvById(userId: string, cvId: string) {
+    const cv = await this.prisma.resume.findFirst({ where: { id: cvId, userId } });
+    if (!cv) throw new Error('Không tìm thấy CV hoặc bạn không có quyền truy cập!');
+    return cv;
+  }
+
+  async updateCvData(userId: string, cvId: string, cvData: any) {
+    const cv = await this.prisma.resume.findFirst({ where: { id: cvId, userId } });
+    if (!cv) throw new Error('Không tìm thấy CV hoặc bạn không có quyền sửa!');
+    return await this.prisma.resume.update({
+      where: { id: cvId },
+      data: { cvData, parsedText: this.flattenToText(cvData) },
+    });
+  }
 }

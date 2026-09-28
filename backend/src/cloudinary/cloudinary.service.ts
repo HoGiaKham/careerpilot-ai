@@ -38,8 +38,8 @@ export class CloudinaryService {
           resolve(result);
         });
       });
-    } catch (error) {
-      console.error('[Cloudinary] Lỗi khi xóa file:', error);
+    } catch {
+      return null;
     }
   }
 }

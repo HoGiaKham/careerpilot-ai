@@ -10,12 +10,10 @@ import { getAuth } from 'firebase-admin/auth';
 export class AuthService {
   constructor(
     private prisma: PrismaService,
-    private jwtService: JwtService 
+    private jwtService: JwtService
   ) {
-    // Để đảm bảo NestJS đã load xong biến môi trường (.env)
     if (!getApps().length) {
       initializeApp({
-        // Nếu không đọc được .env thì dùng ID cứng dự phòng luôn, không bao giờ trượt được!
         projectId: process.env.FIREBASE_PROJECT_ID || 'ai-career-copilot-620ac',
       });
     }
@@ -146,8 +144,7 @@ export class AuthService {
         accessToken,
         user: { id: user.id, email: user.email, name: displayIdentifier }
       };
-    } catch (error) {
-      console.error('Lỗi khi xác thực thẻ Firebase:', error);
+    } catch {
       throw new UnauthorizedException('Thẻ Firebase không hợp lệ hoặc đã hết hạn');
     }
   }
